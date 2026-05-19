@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-from paddleocr import PaddleOCR  # 💡 替換：改引入 PaddleOCR
+from streamlit_paddleocr import StreamlitPaddleOCR  # 💡 核心替換：改用相容新版 Python 的封裝庫
 from PIL import Image, ImageOps
 import contextlib
 import logging
@@ -25,7 +25,7 @@ MODEL_PATH = "best.pt"
 @st.cache_resource
 def get_model():
     if not os.path.exists(MODEL_PATH):
-        # 💡 因為 CSS 封鎖了 .stSpinner，這裡改用常駐文字提示，避免首次下載時畫面看起來像卡死
+        # 因為 CSS 封鎖了 .stSpinner，這裡改用常駐文字提示，避免首次下載時畫面看起來像卡死
         msg = st.empty()
         msg.warning("⏳ 首次啟動，正在下載 YOLO 車牌偵測模型，請稍候...")
         response = requests.get(MODEL_URL, stream=True)
@@ -40,8 +40,8 @@ def get_ocr():
     logging.getLogger('ppocr').setLevel(logging.ERROR)
     with open(os.devnull, 'w') as devnull:
         with contextlib.redirect_stdout(devnull):
-            # 💡 建立 PaddleOCR 實例（使用英文模型，關閉方向分類器以加速）
-            reader = PaddleOCR(use_angle_cls=False, lang='en', use_gpu=False, show_log=False)
+            # 💡 建立符合 streamlit-paddleocr 的實例
+            reader = StreamlitPaddleOCR(use_angle_cls=False, lang='en', use_gpu=False, show_log=False)
     return reader
 
 # --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
@@ -91,16 +91,15 @@ def process_recognition(img_np, should_flip=False):
                 
                 plate_crop_res = plate_crop
                 
-                # 💡 調整：PaddleOCR 對於彩色或灰階影像皆有很好的適應力，此處沿用你的尺寸調整
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
                 with open(os.devnull, 'w') as devnull:
                     with contextlib.redirect_stdout(devnull):
-                        # 💡 替換為 PaddleOCR 辨識語法
-                        _result = reader.ocr(resized, cls=False)
+                        # 💡 調整為 streamlit-paddleocr 的核心呼叫用語 st_ocr
+                        _result = reader.st_ocr(resized, cls=False)
                 
-                # 💡 解析 PaddleOCR 的回傳結構 [ [ [ [box], (text, score) ], ... ] ]
+                # 💡 解析結構 [ [ [ [box], (text, score) ], ... ] ]
                 if _result and _result[0]:
                     words = []
                     scores = []
