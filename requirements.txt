@@ -2,13 +2,13 @@
 streamlit
 
 # --- 影像處理與基礎科學計算 ---
-opencv-python-headless>=4.8.0.0  # 💡 注意：Streamlit Cloud 必須使用 headless 版本，否則會噴 libGL 錯誤
-numpy>=1.24.0,<2.0.0                    # 💡 固定在 1.xx 版本，避免與 Paddle/Ultralytics 的版本衝突
-Pillow>=10.0.0
+easyocr                 # 💡 注意：Streamlit Cloud 必須使用 headless 版本，否則會噴 libGL 錯誤
+numpy                   # 💡 固定在 1.xx 版本，避免與 Paddle/Ultralytics 的版本衝突
+pillow
 
 # --- AI 與深度學習模型 ---
 ultralytics            # YOLOv8 核心
-
+requests
 
 
 
