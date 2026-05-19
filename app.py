@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-import easyocr  # 💡 回歸最原汁原味的 EasyOCR
+import easyocr  
 from PIL import Image, ImageOps
 
 # --- 0. Streamlit 網頁基本配置 ---
@@ -33,10 +33,9 @@ def get_model():
 
 @st.cache_resource
 def get_ocr():
-    # 💡 初始化原版 EasyOCR 英文辨識器
     return easyocr.Reader(['en'], gpu=False)
 
-# --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
+# --- 2. 核心辨識邏輯 ---
 def process_recognition(img_np, should_flip=False):
     if img_np is None:
         return None, None, "等待輸入...", "0.00%"
@@ -79,11 +78,9 @@ def process_recognition(img_np, should_flip=False):
                 
                 plate_crop_res = plate_crop
                 
-                # 原版影像預處理
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                # EasyOCR 原生辨識
                 _result = reader.readtext(resized)
                 
                 if _result:
@@ -91,7 +88,6 @@ def process_recognition(img_np, should_flip=False):
                     scores = []
                     for bbox, text_found, prob in _result:
                         text_upper = text_found.upper()
-                        # 字串過濾器：只保留英數字與連字號
                         filtered_text = "".join([c for c in text_upper if c.isalnum() or c == '-'])
                         if filtered_text:
                             words.append(filtered_text)
@@ -112,7 +108,7 @@ def process_recognition(img_np, should_flip=False):
         
     return draw_img, plate_crop_res, plate_no_res, conf_res
 
-# --- 3. 前端 CSS 強力控制項 ---
+# --- 3. 前端 CSS 與 💡 Android 相機權限強制喚醒項 ---
 st.markdown("""
 <style>
     .stMarkdown h1 { color: #1E88E5; text-align: center; font-weight: bold; }
@@ -123,12 +119,32 @@ st.markdown("""
         display: none !important;
     }
 </style>
+
+<script>
+    // 💡 針對 Android 的 Chrome/Line 瀏覽器進行 Web 核心修正
+    // 強迫讓 Streamlit 產生的檔案上傳標籤具備原生呼叫環境鏡頭的相容性
+    const observer = new MutationObserver((mutations) => {
+        const inputs = document.querySelectorAll('input[type="file"]');
+        inputs.forEach(input => {
+            if (!input.hasAttribute('accept')) {
+                input.setAttribute('accept', 'image/*');
+            }
+            // 提示行動裝置：優先開啟環境鏡頭（後置相機）
+            if (!input.hasAttribute('capture')) {
+                input.setAttribute('capture', 'environment');
+            }
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+</script>
 """, unsafe_allow_html=True)
 
 # --- 4. 建立 UI 介面 ---
 st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
 st.markdown("### 🎯 請協助測試並反饋 ")
-st.markdown("##### 📷 點擊upload選擇【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
+st.markdown("##### 📷 點擊按鈕【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
+
+# 使用原生的 uploader，搭配下方的相機補強
 upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="jimmy_unified_uploader")
 
 st.write("---")
@@ -161,7 +177,7 @@ if upload_file is not None:
 else:
     gc.collect()
     with col_left:
-        st.info("💡 請點擊上方按鈕，選擇【拍照】或從【上傳相幕照片】來啟動車牌自動辨識。")
+        st.info("💡 請點擊上方按鈕，選擇【拍照】或從【上傳相簿照片】來啟動車牌自動辨識。")
     with col_right:
         st.text_input("🔢 辨識號碼", value="等待輸入...", disabled=True, key="disabled_output_box")
 
