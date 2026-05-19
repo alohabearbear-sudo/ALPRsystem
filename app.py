@@ -131,3 +131,56 @@ def process_recognition(img_np, should_flip=False):
 
 # --- 3. 前端 CSS 強力控制項 ---
 st.markdown("""
+<style>
+    .stMarkdown h1 { color: #1E88E5; text-align: center; font-weight: bold; }
+    .stMarkdown h3 { text-align: center; color: #555; }
+    div[data-testid="stStatusWidget"],
+    .stSpinner,
+    div[data-testid="stNotification"] {
+        display: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 4. 建立 UI 介面 ---
+st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
+st.markdown("### 🎯 請協助測試並反饋 ")
+st.markdown("##### 📷 點擊upload選擇【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
+upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="jimmy_unified_uploader")
+
+st.write("---")
+
+# --- 5. 畫面渲染雙欄架構 ---
+col_left, col_right = st.columns([3, 2])
+
+if upload_file is not None:
+    raw_img = Image.open(upload_file)
+    fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
+    if fixed_img.width > 1024:
+        fixed_img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+    img_np = np.array(fixed_img)
+    
+    res_draw, res_crop, res_text, res_conf = process_recognition(img_np, should_flip=False)
+    
+    with col_left:
+        st.subheader("1. 定位確認")
+        if res_draw is not None:
+            st.image(res_draw, use_container_width=True)
+            
+    with col_right:
+        st.subheader("2. 水平精準裁切區域")
+        if res_crop is not None:
+            st.image(res_crop, use_container_width=True)
+        st.subheader("🔢 辨識號碼")
+        st.info(f"**{res_text}**")
+        st.subheader("信心值")
+        st.metric(label="Confidence", value=res_conf)
+else:
+    gc.collect()
+    with col_left:
+        st.info("💡 請點擊上方按鈕，選擇【拍照】或從【上傳相幕照片】來啟動車牌自動辨識。")
+    with col_right:
+        st.text_input("🔢 辨識號碼", value="等待輸入...", disabled=True, key="disabled_output_box")
+
+st.markdown("---")
+st.markdown("<center>Developed by Jimmy Chen | 2026 High-Performance Native Version</center>", unsafe_allow_html=True)
