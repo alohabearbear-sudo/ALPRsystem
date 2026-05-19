@@ -39,11 +39,11 @@ def get_ocr():
     logging.getLogger('ppocr').setLevel(logging.ERROR)
     with open(os.devnull, 'w') as devnull:
         with contextlib.redirect_stdout(devnull):
-            # 💡 修正：拔掉 show_log 參數，改用標準初始化，避免特定版本不支援
-            reader = PaddleOCR(use_angle_cls=False, lang='en', use_gpu=False)
+            # 💡 終極修正：拔掉 use_gpu 參數，只保留最核心的 lang='en'，讓系統自動適應環境
+            reader = PaddleOCR(use_angle_cls=False, lang='en')
     return reader
 
-# --- 2. 核心辨識邏輯 ---
+# --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
 def process_recognition(img_np, should_flip=False):
     if img_np is None:
         return None, None, "等待輸入...", "0.00%"
@@ -96,6 +96,7 @@ def process_recognition(img_np, should_flip=False):
                     with contextlib.redirect_stdout(devnull):
                         _result = reader.ocr(resized, cls=False)
                 
+                # 💡 解析正統 PaddleOCR 結構 [ [ [ [box], (text, score) ], ... ] ]
                 if _result and _result[0]:
                     words = []
                     scores = []
@@ -120,59 +121,3 @@ def process_recognition(img_np, should_flip=False):
         gc.collect()
         
     return draw_img, plate_crop_res, plate_no_res, conf_res
-
-# --- 3. 前端 CSS 強力控制項 ---
-st.markdown("""
-<style>
-    .stMarkdown h1 { color: #1E88E5; text-align: center; font-weight: bold; }
-    .stMarkdown h3 { text-align: center; color: #555; }
-    div[data-testid="stStatusWidget"],
-    .stSpinner,
-    div[data-testid="stNotification"] {
-        display: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- 4. 建立 UI 介面 ---
-st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
-st.markdown("### 🎯 請協助測試並反饋 ")
-st.markdown("##### 📷 點擊upload選擇【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
-upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="jimmy_unified_uploader")
-
-st.write("---")
-
-# --- 5. 畫面渲染雙欄架構 ---
-col_left, col_right = st.columns([3, 2])
-
-if upload_file is not None:
-    raw_img = Image.open(upload_file)
-    fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
-    if fixed_img.width > 1024:
-        fixed_img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
-    img_np = np.array(fixed_img)
-    
-    res_draw, res_crop, res_text, res_conf = process_recognition(img_np, should_flip=False)
-    
-    with col_left:
-        st.subheader("1. 定位確認")
-        if res_draw is not None:
-            st.image(res_draw, use_container_width=True)
-            
-    with col_right:
-        st.subheader("2. 水平精準裁切區域")
-        if res_crop is not None:
-            st.image(res_crop, use_container_width=True)
-        st.subheader("🔢 辨識號碼")
-        st.info(f"**{res_text}**")
-        st.subheader("信心值")
-        st.metric(label="Confidence", value=res_conf)
-else:
-    gc.collect()
-    with col_left:
-        st.info("💡 請點擊上方按鈕，選擇【拍照】或從【上傳相簿照片】來啟動車牌自動辨識。")
-    with col_right:
-        st.text_input("🔢 辨識號碼", value="等待輸入...", disabled=True, key="disabled_output_box")
-
-st.markdown("---")
-st.markdown("<center>Developed by Jimmy Chen | 2026 High-Performance Native Version</center>", unsafe_allow_html=True)
