@@ -6,9 +6,8 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
+import easyocr  # 💡 回歸最原汁原味的 EasyOCR
 from PIL import Image, ImageOps
-import json
-import base64
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
@@ -32,44 +31,10 @@ def get_model():
         msg.empty()
     return YOLO(MODEL_PATH)
 
-# --- 💡 終極修復：改用極速 Google Cloud OCR 匿名防超時通道 ---
-def query_cloud_ocr(image_np):
-    try:
-        # 將 OpenCV 的 numpy 圖片編碼為 JPG
-        _, img_encoded = cv2.imencode('.jpg', image_np)
-        img_base64 = base64.b64encode(img_encoded.tobytes()).decode('utf-8')
-        
-        # 使用 Google Vision API 匿名高速節點（常用於前端即時無痕解析）
-        API_URL = "https://vision.googleapis.com/v1/images:annotate"
-        
-        payload = {
-            "requests": [
-                {
-                    "image": {"content": img_base64},
-                    "features": [{"type": "TEXT_DETECTION"}]
-                }
-            ]
-        }
-        
-        # 透過無障礙公共通道發送請求，超時時間縮短，保證快速回傳
-        response = requests.post(API_URL, json=payload, timeout=4)
-        
-        if response.status_code == 200:
-            res_json = response.json()
-            annotations = res_json.get("responses", [{}])[0].get("textAnnotations", [])
-            
-            if annotations:
-                # annotations[0] 代表完整合併後的字串
-                raw_text = annotations[0].get("description", "").upper()
-                # 僅保留英數字、連字號與空格
-                filtered = "".join([c for c in raw_text if c.isalnum() or c in ['-', ' ', '\n']])
-                # 清洗換行符號
-                final_text = filtered.replace('\n', ' ').strip()
-                return final_text if final_text else "解析中...", "99.12%"
-                
-        return None, None
-    except Exception:
-        return None, None
+@st.cache_resource
+def get_ocr():
+    # 💡 初始化原版 EasyOCR 英文辨識器
+    return easyocr.Reader(['en'], gpu=False)
 
 # --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
 def process_recognition(img_np, should_flip=False):
@@ -85,6 +50,8 @@ def process_recognition(img_np, should_flip=False):
     
     try:
         model = get_model()
+        reader = get_ocr()
+        
         results = model.predict(img_np, conf=0.4, verbose=False)
         found_plate = False
         
@@ -112,14 +79,27 @@ def process_recognition(img_np, should_flip=False):
                 
                 plate_crop_res = plate_crop
                 
-                # 💡 呼叫高穩定度 Google OCR 節點
-                cloud_text, cloud_conf = query_cloud_ocr(plate_crop)
-                if cloud_text:
-                    plate_no_res = cloud_text
-                    conf_res = cloud_conf
-                else:
-                    plate_no_res = "⚠️ 讀取中，請再試一次"
-                    conf_res = "50.00%"
+                # 原版影像預處理
+                gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
+                resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+                
+                # EasyOCR 原生辨識
+                _result = reader.readtext(resized)
+                
+                if _result:
+                    words = []
+                    scores = []
+                    for bbox, text_found, prob in _result:
+                        text_upper = text_found.upper()
+                        # 字串過濾器：只保留英數字與連字號
+                        filtered_text = "".join([c for c in text_upper if c.isalnum() or c == '-'])
+                        if filtered_text:
+                            words.append(filtered_text)
+                            scores.append(prob)
+                    
+                    if words:
+                        plate_no_res = " ".join(words)
+                        conf_res = f"{np.mean(scores):.2%}"
         
         if not found_plate:
             plate_no_res = "❌ 找不到車牌"
