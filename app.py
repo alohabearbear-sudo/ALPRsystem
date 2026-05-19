@@ -35,12 +35,18 @@ def get_model():
 
 @st.cache_resource
 def get_ocr():
-    # 強力封鎖 paddleocr 與全域 logging 輸出，全面消滅日誌字樣
-    logging.getLogger('ppocr').setLevel(logging.ERROR)
-    with open(os.devnull, 'w') as devnull:
-        with contextlib.redirect_stdout(devnull):
-            # 💡 終極修正：拔掉 use_gpu 參數，只保留最核心的 lang='en'，讓系統自動適應環境
-            reader = PaddleOCR(use_angle_cls=False, lang='en')
+    # 💡 終極解鎖：首次啟動時開啟 INFO 層級，允許 PaddleOCR 輸出下載中文字型與模型的進度條
+    # 這能徹底防止 Streamlit 後台因為太久沒有 stdout 輸出而判定網頁超時（Timeout）卡死在 Oven 畫面
+    logging.getLogger('ppocr').setLevel(logging.INFO)
+    
+    # 在網頁畫面上留下一行常駐的警告文字（此元件不受 CSS 隱藏影響）
+    msg = st.empty()
+    msg.info("⏳ 系統首次初始化：正在下載 PaddleOCR 核心文字辨識模型（約 30MB），請盯緊右下角 Log 進度條...")
+    
+    # 啟動正統初始化，開放 show_log 讓連線保持熱絡
+    reader = PaddleOCR(use_angle_cls=False, lang='en', show_log=True)
+    
+    msg.empty()
     return reader
 
 # --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
@@ -92,6 +98,7 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
+                # 在實際進行圖片辨識時，我們再優雅地用 devnull 擋掉多餘的常駐日誌，保持畫面乾淨
                 with open(os.devnull, 'w') as devnull:
                     with contextlib.redirect_stdout(devnull):
                         _result = reader.ocr(resized, cls=False)
@@ -121,3 +128,6 @@ def process_recognition(img_np, should_flip=False):
         gc.collect()
         
     return draw_img, plate_crop_res, plate_no_res, conf_res
+
+# --- 3. 前端 CSS 強力控制項 ---
+st.markdown("""
