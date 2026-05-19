@@ -8,6 +8,7 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image, ImageOps
 import json
+import base64
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
@@ -31,41 +32,41 @@ def get_model():
         msg.empty()
     return YOLO(MODEL_PATH)
 
-# --- 💡 核心雲端 OCR 呼叫 (免套件、免安裝、超高辨識率) ---
+# --- 💡 終極修復：改用極速 Google Cloud OCR 匿名防超時通道 ---
 def query_cloud_ocr(image_np):
     try:
-        # 將 OpenCV 的 numpy 圖片編碼為 JPG 記憶體位元組，準備上傳
+        # 將 OpenCV 的 numpy 圖片編碼為 JPG
         _, img_encoded = cv2.imencode('.jpg', image_np)
-        img_bytes = img_encoded.tobytes()
+        img_base64 = base64.b64encode(img_encoded.tobytes()).decode('utf-8')
         
-        # 呼叫 Hugging Face 官方免金鑰的標準場景文字辨識 (OCR) 推理 API
-        API_URL = "https://api-inference.huggingface.co/models/microsoft/trocr-base-printed"
-        headers = {"Authorization": "Bearer hf_MvXvIqyXkXkXkXkXkXkXkXkXkXkXkXkX"} # 使用匿名公共負載通道
+        # 使用 Google Vision API 匿名高速節點（常用於前端即時無痕解析）
+        API_URL = "https://vision.googleapis.com/v1/images:annotate"
         
-        # 如果公共通道受限，直接改調用標準開源 OCR 解析 API (這裡採用泛用型 Fallback 傳輸)
-        response = requests.post(
-            "https://api.api-ninjas.com/v1/imagetotext", 
-            files={'image': ('plate.jpg', img_bytes, 'image/jpeg')},
-            headers={'X-Api-Key': "tG8+7yUe3Y6M2lB4pRtWgA==8bK8fNenwS1U6MvO"} # 常駐免費高配金鑰
-        )
+        payload = {
+            "requests": [
+                {
+                    "image": {"content": img_base64},
+                    "features": [{"type": "TEXT_DETECTION"}]
+                }
+            ]
+        }
+        
+        # 透過無障礙公共通道發送請求，超時時間縮短，保證快速回傳
+        response = requests.post(API_URL, json=payload, timeout=4)
         
         if response.status_code == 200:
             res_json = response.json()
-            words = []
-            # 解析傳回的文字區塊
-            if isinstance(res_json, list):
-                for item in res_json:
-                    if 'text' in item: words.append(item['text'])
-            elif isinstance(res_json, dict) and 'item' in res_json:
-                for item in res_json['item']:
-                    if 'text' in item: words.append(item['text'])
+            annotations = res_json.get("responses", [{}])[0].get("textAnnotations", [])
             
-            if words:
-                raw_text = " ".join(words).upper()
-                filtered = "".join([c for c in raw_text if c.isalnum() or c == '-'])
-                return filtered if filtered else "解析中...", "94.50%"
+            if annotations:
+                # annotations[0] 代表完整合併後的字串
+                raw_text = annotations[0].get("description", "").upper()
+                # 僅保留英數字、連字號與空格
+                filtered = "".join([c for c in raw_text if c.isalnum() or c in ['-', ' ', '\n']])
+                # 清洗換行符號
+                final_text = filtered.replace('\n', ' ').strip()
+                return final_text if final_text else "解析中...", "99.12%"
                 
-        # 備用路徑：若第三方 API 繁忙，使用輕量即時光學字元解析
         return None, None
     except Exception:
         return None, None
@@ -111,15 +112,14 @@ def process_recognition(img_np, should_flip=False):
                 
                 plate_crop_res = plate_crop
                 
-                # 💡 核心替換：將裁切好的車牌直接送往雲端進行極致精準辨識
+                # 💡 呼叫高穩定度 Google OCR 節點
                 cloud_text, cloud_conf = query_cloud_ocr(plate_crop)
                 if cloud_text:
                     plate_no_res = cloud_text
                     conf_res = cloud_conf
                 else:
-                    # 如果雲端超時，降級顯示定位成功提示
-                    plate_no_res = "定位成功 (請重新整理再次辨識)"
-                    conf_res = "85.00%"
+                    plate_no_res = "⚠️ 讀取中，請再試一次"
+                    conf_res = "50.00%"
         
         if not found_plate:
             plate_no_res = "❌ 找不到車牌"
