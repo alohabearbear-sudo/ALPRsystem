@@ -1,15 +1,8 @@
-# --- 核心 Web 框架 ---
 streamlit>=1.30.0
-
-# --- 影像處理與基礎科學計算 ---
-opencv-python-headless>=4.8.0.0  # 💡 注意：Streamlit Cloud 必須使用 headless 版本，否則會噴 libGL 錯誤
-numpy<2.0.0                      # 💡 固定在 1.xx 版本，避免與 Paddle/Ultralytics 的版本衝突
+opencv-python-headless>=4.8.0.0
+numpy<2.0.0
 Pillow>=10.0.0
-
-# --- AI 與深度學習模型 ---
-ultralytics>=8.1.0               # YOLOv8 核心
-paddlepaddle>=2.5.0              # PaddleOCR 的底層推理引擎 (CPU 版)
-paddleocr>=2.7.0                 # PaddleOCR 文字辨識核心
-
-# --- 網路請求與輔助套件 ---
+ultralytics>=8.1.0
+paddlepaddle>=2.5.0
+paddleocr>=2.7.0
 requests>=2.31.0
