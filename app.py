@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-from paddleocr import PaddleOCR  # 💡 回歸正統 PaddleOCR 引用
+from paddleocr import PaddleOCR  # 💡 正統 PaddleOCR 引用
 from PIL import Image, ImageOps
 import contextlib
 import logging
@@ -39,11 +39,11 @@ def get_ocr():
     logging.getLogger('ppocr').setLevel(logging.ERROR)
     with open(os.devnull, 'w') as devnull:
         with contextlib.redirect_stdout(devnull):
-            # 💡 建立正統 PaddleOCR 實例
-            reader = PaddleOCR(use_angle_cls=False, lang='en', use_gpu=False, show_log=False)
+            # 💡 修正：拔掉 show_log 參數，改用標準初始化，避免特定版本不支援
+            reader = PaddleOCR(use_angle_cls=False, lang='en', use_gpu=False)
     return reader
 
-# --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
+# --- 2. 核心辨識邏輯 ---
 def process_recognition(img_np, should_flip=False):
     if img_np is None:
         return None, None, "等待輸入...", "0.00%"
@@ -94,10 +94,8 @@ def process_recognition(img_np, should_flip=False):
                 
                 with open(os.devnull, 'w') as devnull:
                     with contextlib.redirect_stdout(devnull):
-                        # 💡 正統 PaddleOCR 呼叫語法
                         _result = reader.ocr(resized, cls=False)
                 
-                # 💡 解析正統 PaddleOCR 結構 [ [ [ [box], (text, score) ], ... ] ]
                 if _result and _result[0]:
                     words = []
                     scores = []
