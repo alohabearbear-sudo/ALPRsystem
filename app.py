@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-from paddleocr import PaddleOCR  # 💡 正統 PaddleOCR 引用
+from paddleocr_onnxruntime import PaddleOCR  # 💡 核心替換：改用免依賴的 ONNX 輕量版
 from PIL import Image, ImageOps
 import contextlib
 import logging
@@ -35,17 +35,9 @@ def get_model():
 
 @st.cache_resource
 def get_ocr():
-    # 💡 終極解鎖：首次啟動時開啟 INFO 層級，允許 PaddleOCR 輸出下載中文字型與模型的進度條
-    # 這樣既能防止超時卡死在 Oven 畫面，又能避開無效的 show_log 引數衝突
-    logging.getLogger('ppocr').setLevel(logging.INFO)
-    
-    msg = st.empty()
-    msg.info("⏳ 系統首次初始化：正在下載 PaddleOCR 核心文字辨識模型（約 30MB），請盯緊右下角 Log 進度條...")
-    
-    # 💡 修正：徹底拔除 show_log 與 use_gpu 參數，回歸最純粹的原生安全初始化
+    logging.getLogger('ppocr').setLevel(logging.ERROR)
+    # 💡 ONNX 版初始化極度乾淨，不帶任何多餘參數
     reader = PaddleOCR(use_angle_cls=False, lang='en')
-    
-    msg.empty()
     return reader
 
 # --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
@@ -97,12 +89,9 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                # 實際辨識時，再用 devnull 優雅地擋掉過多干擾日誌
-                with open(os.devnull, 'w') as devnull:
-                    with contextlib.redirect_stdout(devnull):
-                        _result = reader.ocr(resized, cls=False)
+                # 💡 ONNX 版核心呼叫語法與正統版完全一致
+                _result = reader.ocr(resized, cls=False)
                 
-                # 💡 解析正統 PaddleOCR 結構 [ [ [ [box], (text, score) ], ... ] ]
                 if _result and _result[0]:
                     words = []
                     scores = []
