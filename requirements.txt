@@ -11,6 +11,7 @@ ultralytics>=8.1.0               # YOLOv8 核心
 #paddlepaddle==2.6.1             # PaddleOCR 的底層推理引擎 (CPU 版)
 #paddleocr>=2.7.3              # PaddleOCR 文字辨識核心
 paddleocr-onnxruntime>=0.1.0
+rich==15.0.0
 # --- 網路請求與輔助套件 ---
 requests>=2.31.0
 
