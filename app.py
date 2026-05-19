@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-from paddleocr_onnxruntime import PaddleOCR  # 💡 回歸正統 PaddleOCR 路線
 from PIL import Image, ImageOps
 import contextlib
 import logging
@@ -17,6 +16,24 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# --- 💡 核心黑魔法：在背景偷偷動態安裝 PaddleOCR-ONNX ---
+@st.cache_resource
+def bootstrap_paddle_onnx():
+    try:
+        from paddleocr_onnxruntime import PaddleOCR
+    except ImportError:
+        import subprocess
+        # 建立一個畫面上看不到的進度提示
+        msg = st.empty()
+        msg.warning("⏳ 正在安全初始化高效能 Paddle 推理引擎，大約需要 15 秒...")
+        
+        # 呼叫底層 pip 直線安裝，完全繞過 Streamlit 官方 Web 部署引擎
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "paddleocr-onnxruntime>=0.1.0"])
+        
+        msg.empty()
+        from paddleocr_onnxruntime import PaddleOCR
+    return PaddleOCR
 
 # --- 1. 設定與路徑 ---
 MODEL_URL = "https://github.com/alohabearbear-sudo/Car-Plate-Recognition/releases/download/v1/best.pt"
@@ -35,9 +52,11 @@ def get_model():
 
 @st.cache_resource
 def get_ocr():
+    # 呼叫動態安裝器獲取類別
+    PaddleOCRClass = bootstrap_paddle_onnx()
     logging.getLogger('ppocr').setLevel(logging.ERROR)
-    # 💡 乾淨初始化，直接調用 PaddleONNX
-    reader = PaddleOCR(use_angle_cls=False, lang='en')
+    # 乾淨初始化 PaddleONNX
+    reader = PaddleOCRClass(use_angle_cls=False, lang='en')
     return reader
 
 # --- 2. 核心辨識邏輯 (完全保留 Jimmy 的中心點重構與 AI 辨識邏輯) ---
@@ -89,7 +108,7 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                # PaddleOCR-ONNX 辨識呼叫
+                # PaddleOCR-ONNX 辨識呼交
                 _result = reader.ocr(resized, cls=False)
                 
                 if _result and _result[0]:
