@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-from paddleocr_onnxruntime import PaddleOCR  # 💡 核心替換：改用免依賴的 ONNX 輕量版
+from paddleocr_onnxruntime import PaddleOCR  # 💡 回歸正統 PaddleOCR 路線
 from PIL import Image, ImageOps
 import contextlib
 import logging
@@ -36,7 +36,7 @@ def get_model():
 @st.cache_resource
 def get_ocr():
     logging.getLogger('ppocr').setLevel(logging.ERROR)
-    # 💡 ONNX 版初始化極度乾淨，不帶任何多餘參數
+    # 💡 乾淨初始化，直接調用 PaddleONNX
     reader = PaddleOCR(use_angle_cls=False, lang='en')
     return reader
 
@@ -89,7 +89,7 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                # 💡 ONNX 版核心呼叫語法與正統版完全一致
+                # PaddleOCR-ONNX 辨識呼叫
                 _result = reader.ocr(resized, cls=False)
                 
                 if _result and _result[0]:
