@@ -100,14 +100,13 @@ def clean_and_format_plate(text):
     return clean_text if len(clean_text) >= 4 else None
 
 # =====================================================================
-# 4. Streamlit 前端 UI 介面設計（還原成最純淨的介面）
+# 4. Streamlit 前端 UI 介面設計（完美的純淨上傳畫面）
 # =====================================================================
 st.set_page_config(page_title="ALPR 智慧車牌辨識系統", layout="centered")
 st.title("🚗 智慧車牌辨識系統 (ALPR System)")
 st.subheader("搭載 YOLOv8 偵測器 + OpenCV 角度轉正外掛 + EasyOCR")
 st.write("---")
 
-# 這裡移除了 Radio Buttons，直接恢復你原本並存或預設的上傳元件
 image_file = st.file_uploader("請上傳車牌照片 (.jpg, .jpeg, .png)", type=["jpg", "jpeg", "png"])
 
 # =====================================================================
@@ -141,7 +140,7 @@ if image_file is not None:
             plate_count += 1
             st.write(f"### 📍 偵測到第 {plate_count} 張車牌區域：")
             
-            # 啟動角度轉正
+            # 啟動物理轉正
             fixed_plate = correct_plate_rotation(cropped_plate)
             
             # 對比影像
@@ -161,10 +160,14 @@ if image_file is not None:
                 raw_text = "".join([res[1] for res in ocr_results])
                 final_plate_number = clean_and_format_plate(raw_text)
                 
+            # 這裡的字串已經完美閉合關門，絕對不噴錯
             if final_plate_number:
                 st.success(f"🎉 **車牌辨識成功：【 {final_plate_number} 】**")
             else:
                 if raw_text.strip():
                     st.warning(f"⚠️ 辨識到疑似雜訊文字：【 {raw_text} 】(未通過台灣車牌格式過濾)")
                 else:
-                    st.error("❌ 無法清楚辨識車牌文字，請調整
+                    st.error("❌ 無法清楚辨識車牌文字，請調整角度或光線重試。")
+                    
+    if plate_count == 0:
+        st.info("ℹ️ YOLOv8 未在此影像中偵測到任何車牌，請試著靠近或換個角度拍攝。")
