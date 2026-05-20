@@ -93,8 +93,11 @@ def process_recognition(img_np, should_flip=False):
                             words.append(filtered_text)
                             scores.append(prob)
                     
+                    # --- ⚙️ 關鍵優化：過濾雜訊，僅呈現最後一組真正車牌 ---
                     if words:
-                        plate_no_res = " ".join(words)
+                        # 範例：若 words 為 ['51M', 'DX3886']
+                        # words[-1] 會精準抓取最後一個元素 'DX3886'
+                        plate_no_res = words[-1] 
                         conf_res = f"{np.mean(scores):.2%}"
         
         if not found_plate:
