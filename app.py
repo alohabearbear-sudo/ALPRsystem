@@ -81,23 +81,24 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                _result = reader.readtext(resized)
+                # --- ⚙️ 關鍵修正點：強制限定只讀取英文大寫、數字和減號 ---
+                # 加入 allowlist 參數，OCR 引擎會自動 bypass 中文字（如：台灣省）與不規則雜訊
+                _result = reader.readtext(resized, allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-')
                 
                 if _result:
                     words = []
                     scores = []
                     for bbox, text_found, prob in _result:
                         text_upper = text_found.upper()
+                        # 進一步二次過濾
                         filtered_text = "".join([c for c in text_upper if c.isalnum() or c == '-'])
                         if filtered_text:
                             words.append(filtered_text)
                             scores.append(prob)
                     
-                    # --- ⚙️ 關鍵優化：過濾雜訊，僅呈現最後一組真正車牌 ---
+                    # --- ⚙️ 雜訊過濾：只呈現最後一個空白後的字串 ---
                     if words:
-                        # 範例：若 words 為 ['51M', 'DX3886']
-                        # words[-1] 會精準抓取最後一個元素 'DX3886'
-                        plate_no_res = words[-1] 
+                        plate_no_res = words[-1]
                         conf_res = f"{np.mean(scores):.2%}"
         
         if not found_plate:
@@ -124,15 +125,12 @@ st.markdown("""
 </style>
 
 <script>
-    // 💡 針對 Android 的 Chrome/Line 瀏覽器進行 Web 核心修正
-    // 強迫讓 Streamlit 產生的檔案上傳標籤具備原生呼叫環境鏡頭的相容性
     const observer = new MutationObserver((mutations) => {
         const inputs = document.querySelectorAll('input[type="file"]');
         inputs.forEach(input => {
             if (!input.hasAttribute('accept')) {
                 input.setAttribute('accept', 'image/*');
             }
-            // 提示行動裝置：優先開啟環境鏡頭（後置相機）
             if (!input.hasAttribute('capture')) {
                 input.setAttribute('capture', 'environment');
             }
@@ -147,7 +145,6 @@ st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
 st.markdown("### 🎯 採用 YOLOv8 + easyOCR 架構 ")
 st.markdown("##### 📷 點擊按鈕【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
 
-# 使用原生的 uploader，搭配下方的相機補強
 upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="jimmy_unified_uploader")
 
 st.write("---")
