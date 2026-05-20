@@ -117,7 +117,7 @@ st.title("🚗 智慧車牌辨識系統 (ALPR System)")
 st.subheader("搭載 YOLOv8 偵測器 + OpenCV 角度轉正外掛 + EasyOCR")
 st.write("---")
 
-# 支援圖片上傳與相機即時拍攝（支援跨平台 Android/iOS 手機鏡頭喚醒）
+# 支援圖片上傳與相機即時拍攝
 source_type = st.radio("選擇影像來源：", ("上傳圖片檔案", "開啟相機拍照"))
 
 image_file = None
@@ -136,4 +136,65 @@ if image_file is not None:
     
     st.image(pil_image, caption="原始輸入影像", use_container_width=True)
     
-    with st.spinner("🚀 YOLOv8 正在精準定位車牌位置
+    # 修正過後完美閉合的 Spinner 字串
+    with st.spinner("🚀 YOLOv8 正在精準定位車牌位置..."):
+        # 執行 YOLOv8 推論
+        results = model(frame)
+        
+    plate_count = 0
+    
+    for r in results:
+        boxes = r.boxes
+        for box in boxes:
+            cls = int(box.cls[0])
+            
+            # 抓出 YOLO 預測的邊界框座標
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            
+            # 安全防禦：防止 YOLO 框超越圖片邊界
+            h_max, w_max = frame.shape[:2]
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w_max, x2), min(h_max, y2)
+            
+            # 1. 進行車牌區域裁剪 (Crop)
+            cropped_plate = frame[y1:y2, x1:x2]
+            
+            if cropped_plate.size == 0:
+                continue
+                
+            plate_count += 1
+            st.write(f"### 📍 偵測到第 {plate_count} 張車牌區域：")
+            
+            # 2. 啟動 OpenCV 幾何轉正物理外挂
+            fixed_plate = correct_plate_rotation(cropped_plate)
+            
+            # 用 Streamlit 秀出修正前後的對比圖
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(cv2.cvtColor(cropped_plate, cv2.COLOR_BGR2RGB), caption="1. 原始斜向切圖", use_container_width=False)
+            with col2:
+                st.image(cv2.cvtColor(fixed_plate, cv2.COLOR_BGR2RGB), caption="2. 物理外掛自動轉正", use_container_width=False)
+                
+            # 3. 送入 EasyOCR 進行文字光學辨識
+            with st.spinner("📝 EasyOCR 正在解碼車牌文字..."):
+                ocr_results = reader.readtext(fixed_plate)
+                
+            # 4. 解析 OCR 結果並進行台灣白名單清洗
+            raw_text = ""
+            final_plate_number = None
+            
+            if ocr_results:
+                raw_text = "".join([res[1] for res in ocr_results])
+                final_plate_number = clean_and_format_plate(raw_text)
+                
+            # 5. 渲染辨識結果
+            if final_plate_number:
+                st.success(f"🎉 **車牌辨識成功：【 {final_plate_number} 】**")
+            else:
+                if raw_text.strip():
+                    st.warning(f"⚠️ 辨識到疑似雜訊文字：【 {raw_text} 】(未通過台灣車牌格式過濾)")
+                else:
+                    st.error("❌ 無法清楚辨識車牌文字，請調整角度或光線重試。")
+                    
+    if plate_count == 0:
+        st.info("ℹ️ YOLOv8 未在此影像中偵測到任何車牌，請試著靠近或換個角度拍攝。")
