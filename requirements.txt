@@ -9,7 +9,7 @@ pillow
 # --- AI 與深度學習模型 ---
 ultralytics            # YOLOv8 核心
 requests
-
+opencv-python-headless
 
 
 
