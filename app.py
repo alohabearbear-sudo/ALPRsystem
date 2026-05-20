@@ -141,7 +141,7 @@ st.markdown("""
 
 # --- 4. 建立 UI 介面 ---
 st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
-st.markdown("### 🎯 請協助測試並反饋 ")
+st.markdown("### 🎯 採用 YOLOv8 + easyOCR 架構 ")
 st.markdown("##### 📷 點擊按鈕【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
 
 # 使用原生的 uploader，搭配下方的相機補強
