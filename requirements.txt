@@ -1,18 +1,10 @@
 --find-links https://download.pytorch.org/whl/cpu
-torch
-torchvision
+torch==2.2.1
+torchvision==0.17.1
+numpy<2.0.0
 streamlit
 ultralytics
 easyocr
-numpy
 pillow
 requests
 opencv-python-headless
-
-
-
-
-
-
-
-
