@@ -157,27 +157,27 @@ st.write("---")
 col_left, col_right = st.columns([3, 2])
 
 if upload_file is not None:
-    raw_img = Image.open(upload_file)
-    fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
+    try:
+        upload_file.seek(0)
+        raw_img = Image.open(upload_file)
+        raw_img.load()
+    except Exception as e:
+        st.error(f"圖片讀取失敗: {e}")
+        print("=== IMAGE LOAD ERROR ===")
+        print(traceback.format_exc())
+        print("=== END ===")
+        st.stop()
+
+    try:
+        fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
+    except Exception:
+        print("exif_transpose failed, using raw")
+        print(traceback.format_exc())
+        fixed_img = raw_img.convert('RGB')
+
     if fixed_img.width > 1024:
         fixed_img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
     img_np = np.array(fixed_img)
-    
-    res_draw, res_crop, res_text, res_conf = process_recognition(img_np, should_flip=False)
-    
-    with col_left:
-        st.subheader("1. 定位確認")
-        if res_draw is not None:
-            st.image(res_draw, use_container_width=True)
-            
-    with col_right:
-        st.subheader("2. 水平精準裁切區域")
-        if res_crop is not None:
-            st.image(res_crop, use_container_width=True)
-        st.subheader("🔢 辨識號碼")
-        st.info(f"**{res_text}**")
-        st.subheader("信心值")
-        st.metric(label="Confidence", value=res_conf)
 else:
     gc.collect()
     with col_left:
