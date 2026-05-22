@@ -1,4 +1,5 @@
 import os
+import sys
 
 # 1. 強制讓 Python 優先尋找 headless 版本的自帶庫
 os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
@@ -9,7 +10,6 @@ if "cv2" in sys.modules:
 
 
 import gc
-import sys
 import requests
 import cv2
 import numpy as np
