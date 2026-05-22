@@ -6,6 +6,8 @@ import numpy as np
 from PIL import Image
 import requests
 
+# 剩下的車牌辨識程式碼...
+
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
     page_title="AI智慧車牌辨識系統",
