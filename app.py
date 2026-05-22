@@ -8,6 +8,7 @@ import streamlit as st
 from ultralytics import YOLO
 import easyocr  
 from PIL import Image, ImageOps
+import traceback
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
