@@ -34,7 +34,7 @@ def get_model():
 def get_ocr():
     global _reader
     if _reader is None:
-        with st.spinner("⏳ 正在載入 OCR 模型..."):
+        with st.spinner("⏳ 正在載入模型..."):
             _reader = easyocr.Reader(['en'], gpu=False)
     return _reader
 
