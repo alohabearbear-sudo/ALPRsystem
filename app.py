@@ -1,22 +1,10 @@
-import os
-import sys
-
-# 1. 強制讓 Python 優先尋找 headless 版本的自帶庫
-os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
-
-# 2. 如果環境中不幸被混入標準版 cv2，強制移除它的快取，逼系統重新尋找 headless
-if "cv2" in sys.modules:
-    del sys.modules["cv2"]
-
-
-import gc
-import requests
 import cv2
-import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-import easyocr  
-from PIL import Image, ImageOps
+import easyocr
+import numpy as np
+from PIL import Image
+import requests
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
