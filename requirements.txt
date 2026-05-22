@@ -1,9 +1,9 @@
 streamlit
-numpy
 pillow
 requests
-ultralytics
 easyocr==1.7.1
+ultralytics
 opencv-python-headless==4.8.1.78
 torch==2.1.2
 torchvision==0.16.2
+numpy==1.26.4
