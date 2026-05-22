@@ -152,7 +152,7 @@ st.markdown("# 🚗 (Beta 版) 車牌一指辨 by Jimmy Chen")
 st.markdown("### 🎯 採用 YOLOv8 + easyOCR 架構 ")
 st.markdown("##### 📷 點擊按鈕【拍照或上傳相簿照片】即可開啟手機後置鏡頭")
 
-upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="jimmy_unified_uploader")
+upload_file = st.file_uploader("👉 只要一個動作，即可輕鬆辨識車牌", type=["jpg", "jpeg", "png"], key="uploader_v2")
 
 st.write("---")
 
