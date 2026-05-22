@@ -154,7 +154,11 @@ col_left, col_right = st.columns([3, 2])
 
 if upload_file is not None:
     raw_img = Image.open(upload_file)
-    fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
+    try:
+        fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
+    except Exception:
+        fixed_img = raw_img.convert('RGB')
+        
     if fixed_img.width > 1024:
         fixed_img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
     img_np = np.array(fixed_img)
