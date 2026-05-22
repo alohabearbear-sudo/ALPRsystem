@@ -1,12 +1,13 @@
+import os
+import gc
+import sys
+import requests
 import cv2
+import numpy as np
 import streamlit as st
 from ultralytics import YOLO
-import easyocr
-import numpy as np
-from PIL import Image
-import requests
-
-# 剩下的車牌辨識程式碼...
+import easyocr  
+from PIL import Image, ImageOps
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
@@ -182,4 +183,3 @@ else:
 
 st.markdown("---")
 st.markdown("<center>Developed by Jimmy Chen | 2026 High-Performance Native Version</center>", unsafe_allow_html=True)
-# force refresh 12345
