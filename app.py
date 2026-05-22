@@ -107,6 +107,9 @@ def process_recognition(img_np, should_flip=False):
             
     except Exception as e:
         plate_no_res = f"❌ 辨識異常: {str(e)}"
+        print("=== FULL TRACEBACK ===")
+        print(traceback.format_exc())
+        print("=== END TRACEBACK ===")
     finally:
         gc.collect()
         
