@@ -23,9 +23,12 @@ MODEL_PATH = "best.pt"
 
 @st.cache_resource
 def get_model():
-    if not os.path.exists(MODEL_PATH):
+    # 如果檔案不存在或太小（損壞），重新下載
+    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1_000_000:
+        if os.path.exists(MODEL_PATH):
+            os.remove(MODEL_PATH)
         msg = st.empty()
-        msg.warning("⏳ 首次啟動，正在下載 YOLO 車牌偵測模型，請稍候...")
+        msg.warning("⏳ 正在下載 YOLO 車牌偵測模型，請稍候...")
         response = requests.get(MODEL_URL, stream=True)
         with open(MODEL_PATH, "wb") as f:
             f.write(response.content)
