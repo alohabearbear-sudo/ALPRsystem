@@ -27,16 +27,8 @@ _reader = None
 
 def get_model():
     global _model
-    if _model is not None:
-        return _model
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1_000_000:
-        if os.path.exists(MODEL_PATH):
-            os.remove(MODEL_PATH)
-        with st.spinner("⏳ 正在下載 YOLO 車牌偵測模型，請稍候..."):
-            response = requests.get(MODEL_URL, stream=True)
-            with open(MODEL_PATH, "wb") as f:
-                f.write(response.content)
-    _model = YOLO(MODEL_PATH)
+    if _model is None:
+        _model = YOLO("best.pt")
     return _model
 
 def get_ocr():
