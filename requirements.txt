@@ -3,6 +3,12 @@ numpy
 pillow
 requests
 ultralytics
-easyocr
 opencv-python-headless
-opencv-python ; sys_platform == "never"
+easyocr --no-deps
+pyclipper
+shapely
+python-bidi
+PyYAML
+Pillow
+torch
+torchvision
