@@ -18,8 +18,6 @@ st.set_page_config(
 )
 
 # --- 1. 設定與路徑 ---
-MODEL_URL = "https://github.com/alohabearbear-sudo/Car-Plate-Recognition/releases/download/v1/best.pt"
-MODEL_PATH = "best.pt"
 
 # --- 全域模型快取（不用 @st.cache_resource 避免快取到損壞模型）---
 _model = None
