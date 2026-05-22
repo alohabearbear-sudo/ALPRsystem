@@ -1,8 +1,11 @@
+--find-links https://download.pytorch.org/whl/cpu
+torch
+torchvision
 streamlit
+ultralytics
 easyocr
 numpy
 pillow
-ultralytics
 requests
 opencv-python-headless
 
