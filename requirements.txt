@@ -3,14 +3,7 @@ numpy
 pillow
 requests
 ultralytics
-opencv-python-headless
-torch
-torchvision
-scipy
-scikit-image
-python-bidi
-PyYAML
-Pillow
-pyclipper
-shapely
-easyocr --no-deps
+easyocr==1.7.1
+opencv-python-headless==4.8.1.78
+torch==2.1.2
+torchvision==0.16.2
