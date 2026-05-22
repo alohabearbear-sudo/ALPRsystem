@@ -4,11 +4,13 @@ pillow
 requests
 ultralytics
 opencv-python-headless
-easyocr --no-deps
-pyclipper
-shapely
+torch
+torchvision
+scipy
+scikit-image
 python-bidi
 PyYAML
 Pillow
-torch
-torchvision
+pyclipper
+shapely
+easyocr --no-deps
