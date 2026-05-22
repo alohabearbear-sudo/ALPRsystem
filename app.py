@@ -8,6 +8,7 @@ import streamlit as st
 from ultralytics import YOLO
 import easyocr  
 from PIL import Image, ImageOps
+import traceback
 
 # --- 0. Streamlit 網頁基本配置 ---
 st.set_page_config(
@@ -81,8 +82,6 @@ def process_recognition(img_np, should_flip=False):
                 gray = cv2.cvtColor(plate_crop, cv2.COLOR_RGB2GRAY)
                 resized = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
                 
-                # --- ⚙️ 關鍵修正點：強制限定只讀取英文大寫、數字和減號 ---
-                # 加入 allowlist 參數，OCR 引擎會自動 bypass 中文字（如：台灣省）與不規則雜訊
                 _result = reader.readtext(resized, allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-')
                 
                 if _result:
@@ -90,13 +89,11 @@ def process_recognition(img_np, should_flip=False):
                     scores = []
                     for bbox, text_found, prob in _result:
                         text_upper = text_found.upper()
-                        # 進一步二次過濾
                         filtered_text = "".join([c for c in text_upper if c.isalnum() or c == '-'])
                         if filtered_text:
                             words.append(filtered_text)
                             scores.append(prob)
                     
-                    # --- ⚙️ 雜訊過濾：只呈現最後一個空白後的字串 ---
                     if words:
                         plate_no_res = words[-1]
                         conf_res = f"{np.mean(scores):.2%}"
@@ -107,12 +104,13 @@ def process_recognition(img_np, should_flip=False):
             
     except Exception as e:
         plate_no_res = f"❌ 辨識異常: {str(e)}"
+        print(traceback.format_exc())
     finally:
         gc.collect()
         
     return draw_img, plate_crop_res, plate_no_res, conf_res
 
-# --- 3. 前端 CSS 與 💡 Android 相機權限強制喚醒項 ---
+# --- 3. 前端 CSS ---
 st.markdown("""
 <style>
     .stMarkdown h1 { color: #1E88E5; text-align: center; font-weight: bold; }
@@ -153,12 +151,20 @@ st.write("---")
 col_left, col_right = st.columns([3, 2])
 
 if upload_file is not None:
-    raw_img = Image.open(upload_file)
+    try:
+        upload_file.seek(0)
+        raw_img = Image.open(upload_file)
+        raw_img.load()
+    except Exception as e:
+        st.error(f"圖片讀取失敗: {e}")
+        print(traceback.format_exc())
+        st.stop()
+
     try:
         fixed_img = ImageOps.exif_transpose(raw_img).convert('RGB')
     except Exception:
         fixed_img = raw_img.convert('RGB')
-        
+
     if fixed_img.width > 1024:
         fixed_img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
     img_np = np.array(fixed_img)
