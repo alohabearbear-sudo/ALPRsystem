@@ -1,10 +1,7 @@
---find-links https://download.pytorch.org/whl/cpu
-opencv-python-headless==4.5.4.60
-torch==2.2.1
-torchvision==0.17.1
-numpy<2.0.0
 streamlit
-ultralytics
 easyocr
+numpy
 pillow
+ultralytics
 requests
+opencv-python-headless
