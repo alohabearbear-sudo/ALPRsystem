@@ -21,9 +21,12 @@ st.set_page_config(
 MODEL_URL = "https://github.com/alohabearbear-sudo/Car-Plate-Recognition/releases/download/v1/best.pt"
 MODEL_PATH = "best.pt"
 
-@st.cache_resource
+_model = None
+
 def get_model():
-    # 如果檔案不存在或太小（損壞），重新下載
+    global _model
+    if _model is not None:
+        return _model
     if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1_000_000:
         if os.path.exists(MODEL_PATH):
             os.remove(MODEL_PATH)
@@ -33,11 +36,16 @@ def get_model():
         with open(MODEL_PATH, "wb") as f:
             f.write(response.content)
         msg.empty()
-    return YOLO(MODEL_PATH)
+    _model = YOLO(MODEL_PATH)
+    return _model
 
-@st.cache_resource
+_reader = None
+
 def get_ocr():
-    return easyocr.Reader(['en'], gpu=False)
+    global _reader
+    if _reader is None:
+        _reader = easyocr.Reader(['en'], gpu=False)
+    return _reader
 
 # --- 2. 核心辨識邏輯 ---
 def process_recognition(img_np, should_flip=False):
